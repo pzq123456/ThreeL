@@ -106,20 +106,51 @@ function init() {
     cube.castShadow = true
     cube.position.y = 0.5
 
-    const planeGeometry = new PlaneGeometry(3, 3)
+
+
+    const planeGeometry = new PlaneGeometry(30, 30, 30, 30)
     const planeMaterial = new MeshLambertMaterial({
       color: 'gray',
       emissive: 'teal',
       emissiveIntensity: 0.2,
       side: 2,
-      transparent: true,
-      opacity: 0.4,
     })
+
+    function getRedomData(row: number, col: number): number[] {
+      const data = [];
+      for (let i = 0; i < row * col; i++) {
+        if(i % 2 === 0){
+          data.push(Math.random() * 30);
+        }else{
+          data.push(Math.random() * -30);
+        }
+      }
+      return data;
+    }
+
+    const data = getRedomData(31, 31);
+    for(let i = 0; i < data.length; i++) {
+      planeGeometry.attributes.position.setZ(i, (data[i] / 10) );
+    }
+
+    console.log(planeGeometry);
+  
+
+
+    
+// console.time('parseGeom');
+// const arr1 = new Array(geometry.attributes.position.count);
+// const arr = arr1.fill(1);
+// arr.forEach((a, index) => {
+//   geometry.attributes.position.setZ(index, (data[index] / 10) * -1);
+// });
+// console.timeEnd('parseGeom'); 
+    
     const plane = new Mesh(planeGeometry, planeMaterial)
     plane.rotateX(Math.PI / 2)
     plane.receiveShadow = true
 
-    scene.add(cube)
+    // scene.add(cube)
     scene.add(plane)
   }
 
@@ -170,15 +201,15 @@ function init() {
 
   // ===== 🪄 HELPERS =====
   {
-    axesHelper = new AxesHelper(4)
-    axesHelper.visible = false
+    axesHelper = new AxesHelper(15)
+    axesHelper.visible = true
     scene.add(axesHelper)
 
     pointLightHelper = new PointLightHelper(pointLight, undefined, 'orange')
     pointLightHelper.visible = false
     scene.add(pointLightHelper)
 
-    const gridHelper = new GridHelper(20, 20, 'teal', 'darkgray')
+    const gridHelper = new GridHelper(30, 30, 'teal', 'darkgray')
     gridHelper.position.y = -0.01
     scene.add(gridHelper)
   }
