@@ -24,6 +24,7 @@ import * as animations from './helpers/animations'
 import { toggleFullScreen } from './helpers/fullscreen'
 import { resizeRendererToDisplaySize } from './helpers/responsiveness'
 import './style.css'
+import { Perlin,sample,dampedSin3D,worleyNoise,Sin3D } from './Noise'
 
 const CANVAS_ID = 'scene'
 
@@ -110,42 +111,33 @@ function init() {
 
     const planeGeometry = new PlaneGeometry(30, 30, 30, 30)
     const planeMaterial = new MeshLambertMaterial({
-      color: 'gray',
+      color: 'white',
       emissive: 'teal',
       emissiveIntensity: 0.2,
       side: 2,
     })
 
-    function getRedomData(row: number, col: number): number[] {
-      const data = [];
-      for (let i = 0; i < row * col; i++) {
-        if(i % 2 === 0){
-          data.push(Math.random() * 30);
-        }else{
-          data.push(Math.random() * -30);
-        }
-      }
+    function getRedomData(row: number, col: number): number[][]{
+      // let data = sample(31, 0.05, 0.05, Perlin);
+      let data = sample(31, 1, 1, Sin3D);
       return data;
     }
 
     const data = getRedomData(31, 31);
+    // const data = worleyNoise(31,31,3);
+    // 将 data 拉伸到 30 * 30
     for(let i = 0; i < data.length; i++) {
-      planeGeometry.attributes.position.setZ(i, (data[i] / 10) );
+      for(let j = 0; j < data.length; j++) {
+        planeGeometry.attributes.position.setZ(i * 31 + j, (data[i][j]) );
+      }
     }
+
 
     console.log(planeGeometry);
   
 
 
-    
-// console.time('parseGeom');
-// const arr1 = new Array(geometry.attributes.position.count);
-// const arr = arr1.fill(1);
-// arr.forEach((a, index) => {
-//   geometry.attributes.position.setZ(index, (data[index] / 10) * -1);
-// });
-// console.timeEnd('parseGeom'); 
-    
+        
     const plane = new Mesh(planeGeometry, planeMaterial)
     plane.rotateX(Math.PI / 2)
     plane.receiveShadow = true
