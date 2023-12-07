@@ -5,6 +5,9 @@ import {
   BoxGeometry,
   Clock,
   GridHelper,
+  Group,
+  LineBasicMaterial,
+  LineSegments,
   LoadingManager,
   Mesh,
   MeshLambertMaterial,
@@ -85,8 +88,8 @@ function init() {
   // ===== 💡 LIGHTS =====
   {
     ambientLight = new AmbientLight('white', 0.4)
-    pointLight = new PointLight('#ffdca8', 1.2, 200)
-    pointLight.position.set(-2, 3, 5)
+    pointLight = new PointLight('white', 1.2, 400)
+    pointLight.position.set(0, 0, 20)
     pointLight.castShadow = true
     pointLight.shadow.radius = 4
     pointLight.shadow.camera.near = 0.5
@@ -109,69 +112,40 @@ function init() {
     cube = new Mesh(cubeGeometry, cubeMaterial)
     cube.castShadow = true
     cube.position.y = 0.5
-
-
-
-    // const planeGeometry = new PlaneGeometry(30, 30, 30, 30)
-    // const planeMaterial = new MeshLambertMaterial({
-    //   color: 'white',
-    //   emissive: 'teal',
-    //   emissiveIntensity: 0.2,
-    //   side: 2,
-    // })
-
-    // function getRedomData(row: number, col: number): number[][]{
-    //   // let data = sample(31, 0.05, 0.05, Perlin);
-    //   // let data = sample(31, 1, 1, Sin3D);
-    //   return data;
-    // }
-
-    // const data = getRedomData(31, 31);
-    // // const data = worleyNoise(31,31,3);
-    // // 将 data 拉伸到 30 * 30
-    // for(let i = 0; i < data.length; i++) {
-    //   for(let j = 0; j < data.length; j++) {
-    //     planeGeometry.attributes.position.setZ(i * 31 + j, (data[i][j]) );
-    //   }
-    // }
-        
-    // const plane = new Mesh(planeGeometry, planeMaterial)
-    // plane.rotateX(Math.PI / 2)
-    // plane.receiveShadow = true
-
-    // scene.add(plane)
-
     axios.get('dem.csv').then((res)=>{
       let data = parseData(res.data);
-      const planeGeometry = new PlaneGeometry(30, 30, 30, 30)
+      const planeGeometry = new PlaneGeometry(255, 255, 255, 255)
       const planeMaterial = new MeshLambertMaterial({
-        color: 'gray',
-        emissive: 'teal',
-        emissiveIntensity: 0.2,
+        color: 0x156289,
         side: 2,
+        flatShading: true,
       })
-      // 截取 31 * 31 的数据
-      data = data.slice(0, 31);
-      for(let i = 0; i < data.length; i++) {
-        data[i] = data[i].slice(0, 31);
-      }
-      // 将 data 拉伸到 30 * 30
-      for(let i = 0; i < data.length; i++) {
-        for(let j = 0; j < data.length; j++) {
-          planeGeometry.attributes.position.setZ(i * 31 + j, (data[i][j] * 3) );
+
+      planeGeometry.attributes.position.setZ(12,1)
+      let count = 0;
+      for(let i = 0; i < data.length; i++){
+        for(let j = 0; j < data[i].length; j++){
+          planeGeometry.attributes.position.setZ(count, data[i][j] * 3)
+          count++;
         }
       }
+
       const plane = new Mesh(planeGeometry, planeMaterial)
-      plane.rotateX(Math.PI / 2)
-      plane.receiveShadow = true
-      scene.add(plane)
+      const group = new Group();
+      
+      group.add(plane);
+      const lineMaterial = new LineBasicMaterial( { color: 0xffffff, transparent: true, opacity: 0.5 } );
+			// group.add( new LineSegments( planeGeometry, lineMaterial ) );
+      scene.add(group);
+      // 添加网格纹理
     })
+
   }
 
   // ===== 🎥 CAMERA =====
   {
-    camera = new PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1, 100)
-    camera.position.set(2, 2, 5)
+    camera = new PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1)
+    camera.position.set(0, 0, 200)
   }
 
   // ===== 🕹️ CONTROLS =====
@@ -223,9 +197,10 @@ function init() {
     pointLightHelper.visible = false
     scene.add(pointLightHelper)
 
-    const gridHelper = new GridHelper(30, 30, 'teal', 'darkgray')
-    gridHelper.position.y = -0.01
-    scene.add(gridHelper)
+    const gridHelper = new GridHelper(256, 256, 'teal', 'darkgray')
+    gridHelper.position.y = -3
+
+    // scene.add(gridHelper)
   }
 
   // ===== 📈 STATS & CLOCK =====
