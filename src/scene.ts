@@ -24,7 +24,10 @@ import * as animations from './helpers/animations'
 import { toggleFullScreen } from './helpers/fullscreen'
 import { resizeRendererToDisplaySize } from './helpers/responsiveness'
 import './style.css'
-import { Perlin,sample,dampedSin3D,worleyNoise,Sin3D } from './Noise'
+
+import axios from 'axios';
+
+
 
 const CANVAS_ID = 'scene'
 
@@ -82,8 +85,8 @@ function init() {
   // ===== 💡 LIGHTS =====
   {
     ambientLight = new AmbientLight('white', 0.4)
-    pointLight = new PointLight('#ffdca8', 1.2, 100)
-    pointLight.position.set(-2, 3, 3)
+    pointLight = new PointLight('#ffdca8', 1.2, 200)
+    pointLight.position.set(-2, 3, 5)
     pointLight.castShadow = true
     pointLight.shadow.radius = 4
     pointLight.shadow.camera.near = 0.5
@@ -109,41 +112,60 @@ function init() {
 
 
 
-    const planeGeometry = new PlaneGeometry(30, 30, 30, 30)
-    const planeMaterial = new MeshLambertMaterial({
-      color: 'white',
-      emissive: 'teal',
-      emissiveIntensity: 0.2,
-      side: 2,
-    })
+    // const planeGeometry = new PlaneGeometry(30, 30, 30, 30)
+    // const planeMaterial = new MeshLambertMaterial({
+    //   color: 'white',
+    //   emissive: 'teal',
+    //   emissiveIntensity: 0.2,
+    //   side: 2,
+    // })
 
-    function getRedomData(row: number, col: number): number[][]{
-      // let data = sample(31, 0.05, 0.05, Perlin);
-      let data = sample(31, 1, 1, Sin3D);
-      return data;
-    }
+    // function getRedomData(row: number, col: number): number[][]{
+    //   // let data = sample(31, 0.05, 0.05, Perlin);
+    //   // let data = sample(31, 1, 1, Sin3D);
+    //   return data;
+    // }
 
-    const data = getRedomData(31, 31);
-    // const data = worleyNoise(31,31,3);
-    // 将 data 拉伸到 30 * 30
-    for(let i = 0; i < data.length; i++) {
-      for(let j = 0; j < data.length; j++) {
-        planeGeometry.attributes.position.setZ(i * 31 + j, (data[i][j]) );
-      }
-    }
-
-
-    console.log(planeGeometry);
-  
-
-
+    // const data = getRedomData(31, 31);
+    // // const data = worleyNoise(31,31,3);
+    // // 将 data 拉伸到 30 * 30
+    // for(let i = 0; i < data.length; i++) {
+    //   for(let j = 0; j < data.length; j++) {
+    //     planeGeometry.attributes.position.setZ(i * 31 + j, (data[i][j]) );
+    //   }
+    // }
         
-    const plane = new Mesh(planeGeometry, planeMaterial)
-    plane.rotateX(Math.PI / 2)
-    plane.receiveShadow = true
+    // const plane = new Mesh(planeGeometry, planeMaterial)
+    // plane.rotateX(Math.PI / 2)
+    // plane.receiveShadow = true
 
-    // scene.add(cube)
-    scene.add(plane)
+    // scene.add(plane)
+
+    axios.get('dem.csv').then((res)=>{
+      let data = parseData(res.data);
+      const planeGeometry = new PlaneGeometry(30, 30, 30, 30)
+      const planeMaterial = new MeshLambertMaterial({
+        color: 'gray',
+        emissive: 'teal',
+        emissiveIntensity: 0.2,
+        side: 2,
+      })
+      // 截取 31 * 31 的数据
+      data = data.slice(0, 31);
+      for(let i = 0; i < data.length; i++) {
+        data[i] = data[i].slice(0, 31);
+      }
+      // 将 data 拉伸到 30 * 30
+      for(let i = 0; i < data.length; i++) {
+        for(let j = 0; j < data.length; j++) {
+          planeGeometry.attributes.position.setZ(i * 31 + j, (data[i][j] * 3) );
+        }
+      }
+      const plane = new Mesh(planeGeometry, planeMaterial)
+      plane.rotateX(Math.PI / 2)
+      plane.receiveShadow = true
+      scene.add(plane)
+    })
   }
 
   // ===== 🎥 CAMERA =====
@@ -288,4 +310,25 @@ function animate() {
   cameraControls.update()
 
   renderer.render(scene, camera)
+}
+
+function parseData(data:string){
+  let lines = data.split('\n');
+  let result = [];
+  for(let line of lines){
+      let nums = line.split(',');
+      let row = [];
+      for(let num of nums){
+          // 读取整型 若有 NAN 则替换为 0
+          let n = parseInt(num);
+          if(isNaN(n)){
+              n = 0;
+          }
+          row.push(n);
+      }
+      result.push(row);
+  }
+  // 去掉最后一行
+  result.pop();
+  return result;
 }
