@@ -114,9 +114,11 @@ function init() {
     cube.position.y = 0.5
     axios.get('dem.csv').then((res)=>{
       let data = parseData(res.data);
+      // 对 data 归一化
+      data = Normalization(data);
       const planeGeometry = new PlaneGeometry(255, 255, 255, 255)
       const planeMaterial = new MeshLambertMaterial({
-        color: 0x156289,
+        color: "white",
         side: 2,
         flatShading: true,
       })
@@ -125,7 +127,7 @@ function init() {
       let count = 0;
       for(let i = 0; i < data.length; i++){
         for(let j = 0; j < data[i].length; j++){
-          planeGeometry.attributes.position.setZ(count, data[i][j] * 3)
+          planeGeometry.attributes.position.setZ(count, data[i][j] * 1)
           count++;
         }
       }
@@ -306,4 +308,26 @@ function parseData(data:string){
   // 去掉最后一行
   result.pop();
   return result;
+}
+
+
+function Normalization(data:number[][]){
+  let max = 0;
+  let min = 0;
+  for(let i = 0; i < data.length; i++){
+    for(let j = 0; j < data[i].length; j++){
+      if(data[i][j] > max){
+        max = data[i][j];
+      }
+      if(data[i][j] < min){
+        min = data[i][j];
+      }
+    }
+  }
+  for(let i = 0; i < data.length; i++){
+    for(let j = 0; j < data[i].length; j++){
+      data[i][j] = (data[i][j] - min) / (max - min);
+    }
+  }
+  return data;
 }
