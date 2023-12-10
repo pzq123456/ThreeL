@@ -7,7 +7,6 @@ import {
   GridHelper,
   Group,
   LineBasicMaterial,
-  LineSegments,
   LoadingManager,
   Mesh,
   MeshLambertMaterial,
@@ -28,7 +27,8 @@ import { toggleFullScreen } from './helpers/fullscreen'
 import { resizeRendererToDisplaySize } from './helpers/responsiveness'
 import './style.css'
 
-import axios from 'axios';
+import * as THREE from 'three';
+// import axios from 'axios';
 
 
 
@@ -40,7 +40,7 @@ let scene: Scene
 let loadingManager: LoadingManager
 let ambientLight: AmbientLight
 let pointLight: PointLight
-let cube: Mesh
+let sphere: Mesh
 let camera: PerspectiveCamera
 let cameraControls: OrbitControls
 let dragControls: DragControls
@@ -102,85 +102,32 @@ function init() {
 
   // ===== 📦 OBJECTS =====
   {
-    const sideLength = 1
-    const cubeGeometry = new BoxGeometry(sideLength, sideLength, sideLength)
-    const cubeMaterial = new MeshStandardMaterial({
-      color: '#f69f1f',
-      metalness: 0.5,
-      roughness: 0.7,
+    // create a sphere
+    sphere = new THREE.Mesh(
+    new THREE.SphereGeometry (5, 50, 50),
+    new THREE.MeshBasicMaterial({
+    // color: Oxff0000,
+    map: new THREE.TextureLoader(). load('./Globe.jpg')
+    // map: new THREE.TextureLoader(). load('Neight.png')
+
     })
-    cube = new Mesh(cubeGeometry, cubeMaterial)
-    cube.castShadow = true
-    cube.position.y = 0.5
-    axios.get('dem.csv').then((res)=>{
-      let data = parseData(res.data);
-      // 对 data 归一化
-      data = Normalization(data);
-      const planeGeometry = new PlaneGeometry(255, 255, 255, 255)
-      const planeMaterial = new MeshLambertMaterial({
-        color: "white",
-        side: 2,
-        flatShading: true,
-      })
-
-      planeGeometry.attributes.position.setZ(12,1)
-      let count = 0;
-      for(let i = 0; i < data.length; i++){
-        for(let j = 0; j < data[i].length; j++){
-          planeGeometry.attributes.position.setZ(count, data[i][j] * 1)
-          count++;
-        }
-      }
-
-      const plane = new Mesh(planeGeometry, planeMaterial)
-      const group = new Group();
-      
-      group.add(plane);
-      const lineMaterial = new LineBasicMaterial( { color: 0xffffff, transparent: true, opacity: 0.5 } );
-			// group.add( new LineSegments( planeGeometry, lineMaterial ) );
-      scene.add(group);
-      // 添加网格纹理
-    })
-
-  }
+  )
+  scene.add(sphere);
+}
 
   // ===== 🎥 CAMERA =====
   {
     camera = new PerspectiveCamera(50, canvas.clientWidth / canvas.clientHeight, 0.1)
-    camera.position.set(0, 0, 200)
+    camera.position.set(0, 0, 20)
   }
 
   // ===== 🕹️ CONTROLS =====
   {
     cameraControls = new OrbitControls(camera, canvas)
-    cameraControls.target = cube.position.clone()
+    cameraControls.target = sphere.position.clone()
     cameraControls.enableDamping = true
     cameraControls.autoRotate = false
     cameraControls.update()
-
-    dragControls = new DragControls([cube], camera, renderer.domElement)
-    dragControls.addEventListener('hoveron', (event) => {
-      event.object.material.emissive.set('orange')
-    })
-    dragControls.addEventListener('hoveroff', (event) => {
-      event.object.material.emissive.set('black')
-    })
-    dragControls.addEventListener('dragstart', (event) => {
-      cameraControls.enabled = false
-      animation.play = false
-      event.object.material.emissive.set('black')
-      event.object.material.opacity = 0.7
-      event.object.material.needsUpdate = true
-    })
-    dragControls.addEventListener('dragend', (event) => {
-      cameraControls.enabled = true
-      animation.play = true
-      event.object.material.emissive.set('black')
-      event.object.material.opacity = 1
-      event.object.material.needsUpdate = true
-    })
-    dragControls.enabled = false
-
     // Full screen
     window.addEventListener('dblclick', (event) => {
       if (event.target === canvas) {
@@ -201,8 +148,6 @@ function init() {
 
     const gridHelper = new GridHelper(256, 256, 'teal', 'darkgray')
     gridHelper.position.y = -3
-
-    // scene.add(gridHelper)
   }
 
   // ===== 📈 STATS & CLOCK =====
@@ -215,26 +160,19 @@ function init() {
   // ==== 🐞 DEBUG GUI ====
   {
     gui = new GUI({ title: '🐞 Debug GUI', width: 300 })
+    const sphereFolder = gui.addFolder('Sphere')
+    sphereFolder.add(sphere.position, 'x', -10, 10, 0.01).name('x')
+    sphereFolder.add(sphere.position, 'y', -10, 10, 0.01).name('y')
+    sphereFolder.add(sphere.position, 'z', -10, 10, 0.01).name('z')
+    sphereFolder.add(sphere.rotation, 'x', -Math.PI, Math.PI, 0.01).name('rotation x')
+    sphereFolder.add(sphere.rotation, 'y', -Math.PI, Math.PI, 0.01).name('rotation y')
+    sphereFolder.add(sphere.rotation, 'z', -Math.PI, Math.PI, 0.01).name('rotation z')
+    sphereFolder.add(sphere.scale, 'x', 0, 10, 0.01).name('scale x')
+    sphereFolder.add(sphere.scale, 'y', 0, 10, 0.01).name('scale y')
+    sphereFolder.add(sphere.scale, 'z', 0, 10, 0.01).name('scale z')
+    sphereFolder.add(sphere.material, 'wireframe').name('wireframe')
+    sphereFolder.add(sphere.material, 'visible').name('visible')
 
-    const cubeOneFolder = gui.addFolder('Cube one')
-
-    cubeOneFolder.add(cube.position, 'x').min(-5).max(5).step(0.5).name('pos x')
-    cubeOneFolder.add(cube.position, 'y').min(-5).max(5).step(0.5).name('pos y')
-    cubeOneFolder.add(cube.position, 'z').min(-5).max(5).step(0.5).name('pos z')
-
-    cubeOneFolder.add(cube.material, 'wireframe')
-    cubeOneFolder.addColor(cube.material, 'color')
-    cubeOneFolder.add(cube.material, 'metalness', 0, 1, 0.1)
-    cubeOneFolder.add(cube.material, 'roughness', 0, 1, 0.1)
-
-    cubeOneFolder.add(cube.rotation, 'x', -Math.PI * 2, Math.PI * 2, Math.PI / 4).name('rotate x')
-    cubeOneFolder.add(cube.rotation, 'y', -Math.PI * 2, Math.PI * 2, Math.PI / 4).name('rotate y')
-    cubeOneFolder.add(cube.rotation, 'z', -Math.PI * 2, Math.PI * 2, Math.PI / 4).name('rotate z')
-
-    cubeOneFolder.add(animation, 'enabled').name('animated')
-
-    const controlsFolder = gui.addFolder('Controls')
-    controlsFolder.add(dragControls, 'enabled').name('drag controls')
 
     const lightsFolder = gui.addFolder('Lights')
     lightsFolder.add(pointLight, 'visible').name('point light')
@@ -274,8 +212,8 @@ function animate() {
   stats.update()
 
   if (animation.enabled && animation.play) {
-    animations.rotate(cube, clock, Math.PI / 3)
-    animations.bounce(cube, clock, 1, 0.5, 0.5)
+    animations.rotate(sphere, clock, Math.PI / 3)
+    animations.bounce(sphere, clock, 1, 0.5, 0.5)
   }
 
   if (resizeRendererToDisplaySize(renderer)) {
@@ -289,45 +227,4 @@ function animate() {
   renderer.render(scene, camera)
 }
 
-function parseData(data:string){
-  let lines = data.split('\n');
-  let result = [];
-  for(let line of lines){
-      let nums = line.split(',');
-      let row = [];
-      for(let num of nums){
-          // 读取整型 若有 NAN 则替换为 0
-          let n = parseInt(num);
-          if(isNaN(n)){
-              n = 0;
-          }
-          row.push(n);
-      }
-      result.push(row);
-  }
-  // 去掉最后一行
-  result.pop();
-  return result;
-}
 
-
-function Normalization(data:number[][]){
-  let max = 0;
-  let min = 0;
-  for(let i = 0; i < data.length; i++){
-    for(let j = 0; j < data[i].length; j++){
-      if(data[i][j] > max){
-        max = data[i][j];
-      }
-      if(data[i][j] < min){
-        min = data[i][j];
-      }
-    }
-  }
-  for(let i = 0; i < data.length; i++){
-    for(let j = 0; j < data[i].length; j++){
-      data[i][j] = (data[i][j] - min) / (max - min);
-    }
-  }
-  return data;
-}
