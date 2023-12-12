@@ -102,15 +102,17 @@ function init() {
 
   // ===== 📦 OBJECTS =====
   {
-    // create a sphere
-    sphere = new THREE.Mesh(
-    new THREE.SphereGeometry (5, 50, 50),
-    new THREE.MeshBasicMaterial({
-    // color: Oxff0000,
-    map: new THREE.TextureLoader(). load('./Globe.jpg')
-    // map: new THREE.TextureLoader(). load('Neight.png')
-
+      
+    const sphereMesh = new THREE.SphereGeometry (10, 360, 180);
+    const texture = new THREE.TextureLoader().load('./Globe.jpg');
+    const normal = new THREE.TextureLoader().load('./normal.jpg');
+    const material = new MeshStandardMaterial({
+      map: texture,
+      normalMap: normal,
     })
+    sphere = new THREE.Mesh(
+      sphereMesh,
+      material
   )
   scene.add(sphere);
 }
@@ -172,6 +174,11 @@ function init() {
     sphereFolder.add(sphere.scale, 'z', 0, 10, 0.01).name('scale z')
     sphereFolder.add(sphere.material, 'wireframe').name('wireframe')
     sphereFolder.add(sphere.material, 'visible').name('visible')
+
+    // animations
+    const animationsFolder = gui.addFolder('Animations')
+    animationsFolder.add(animation, 'enabled').name('enabled')
+    animationsFolder.add(animation, 'play').name('play')
 
 
     const lightsFolder = gui.addFolder('Lights')
