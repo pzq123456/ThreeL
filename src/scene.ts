@@ -153,82 +153,82 @@ function createMorphTarget(geometry: THREE.SphereGeometry) {
 
 function createParticles() {
   const geometry = new THREE.BufferGeometry();
-  let positions = new Float32Array(config.particles.count * 3);
-  let destinations = new Float32Array(config.particles.count * 3);
-  let speeds = new Float32Array(config.particles.count);
-  let spherePositions = new Float32Array(config.particles.count * 3);
+  const positions = new Float32Array(config.particles.count * 3);
+  const destinations = new Float32Array(config.particles.count * 3);
+  const spherePositions = new Float32Array(config.particles.count * 3);
+  const speeds = new Float32Array(config.particles.count);
+  const colors = new Float32Array(config.particles.count * 3);
 
-  // Get sphere geometry positions
-  const sphereGeometry = new THREE.SphereGeometry(
-    config.sphere.radius,
-    config.sphere.widthSegments,
-    config.sphere.heightSegments
-  );
-  const spherePosArray = sphereGeometry.attributes.position.array as Float32Array;
-  const sphereUVArray = sphereGeometry.attributes.uv.array as Float32Array;
-
-  let index = 0;
-  for (let i = 0; i < spherePosArray.length / 3 && index < config.particles.count; i++) {
-    const u = sphereUVArray[i * 2];
-    const v = sphereUVArray[i * 2 + 1];
+  // Create a uniform distribution of points on a sphere
+  const radius = config.sphere.radius * 1.01; // Slightly larger than sphere to avoid z-fighting
+  let i = 0;
+  
+  // Use Fibonacci sphere algorithm for uniform distribution
+  const phi = Math.PI * (3 - Math.sqrt(5)); // Golden angle in radians
+  
+  for (let j = 0; j < config.particles.count; j++) {
+    const y = 1 - (j / (config.particles.count - 1)) * 2; // y goes from 1 to -1
+    const radiusAtY = Math.sqrt(1 - y * y); // radius at y
     
-    // Convert UV to image coordinates
-    const x = Math.floor(u * imagedata.width);
-    const y = Math.floor((1 - v) * imagedata.height); // Flip v coordinate
+    const theta = phi * j; // Golden angle increment
     
-    // Check if pixel is not transparent
-    if (imagedata.data[(y * imagedata.width + x) * 4 + 3] > 128) {
-      // Sphere position
-      positions[index * 3] = spherePosArray[i * 3];
-      positions[index * 3 + 1] = spherePosArray[i * 3 + 1];
-      positions[index * 3 + 2] = spherePosArray[i * 3 + 2];
-
-      // Store initial sphere position
-      spherePositions[index * 3] = positions[index * 3];
-      spherePositions[index * 3 + 1] = positions[index * 3 + 1];
-      spherePositions[index * 3 + 2] = positions[index * 3 + 2];
-
-      // Destination for plane (map UV to plane coordinates)
-      const width = 2 * Math.PI * config.sphere.radius;
-      const height = Math.PI * config.sphere.radius;
-      destinations[index * 3] = (u - 0.5) * width;
-      destinations[index * 3 + 1] = (v - 0.5) * height;
-      destinations[index * 3 + 2] = 0;
-
-      speeds[index] = config.particles.speed;
-      index++;
+    const x = Math.cos(theta) * radiusAtY;
+    const z = Math.sin(theta) * radiusAtY;
+    
+    // Sphere positions
+    positions[i * 3] = x * radius;
+    positions[i * 3 + 1] = y * radius;
+    positions[i * 3 + 2] = z * radius;
+    
+    // Store initial sphere positions (same as current positions)
+    spherePositions[i * 3] = positions[i * 3];
+    spherePositions[i * 3 + 1] = positions[i * 3 + 1];
+    spherePositions[i * 3 + 2] = positions[i * 3 + 2];
+    
+    // Convert spherical coordinates to UV for plane mapping
+    const u = 0.5 + Math.atan2(z, x) / (2 * Math.PI);
+    const v = 0.5 - Math.asin(y) / Math.PI;
+    
+    // Destination positions on plane
+    const width = 2 * Math.PI * config.sphere.radius;
+    const height = Math.PI * config.sphere.radius;
+    destinations[i * 3] = (u - 0.5) * width;
+    destinations[i * 3 + 1] = (v - 0.5) * height;
+    destinations[i * 3 + 2] = 0;
+    
+    // Random speed variation
+    speeds[i] = config.particles.speed * (0.8 + Math.random() * 0.4);
+    
+    // Optional: sample color from texture
+    if (imagedata) {
+      const texX = Math.floor(u * imagedata.width) % imagedata.width;
+      const texY = Math.floor((1 - v) * imagedata.height) % imagedata.height;
+      const pixelIndex = (texY * imagedata.width + texX) * 4;
+      
+      colors[i * 3] = imagedata.data[pixelIndex] / 255;
+      colors[i * 3 + 1] = imagedata.data[pixelIndex + 1] / 255;
+      colors[i * 3 + 2] = imagedata.data[pixelIndex + 2] / 255;
+    } else {
+      colors[i * 3] = 1;
+      colors[i * 3 + 1] = 1;
+      colors[i * 3 + 2] = 1;
     }
-  }
-
-  // Resize arrays in case we didn't fill all particles
-  if (index < config.particles.count) {
-    const newPositions = new Float32Array(index * 3);
-    const newDestinations = new Float32Array(index * 3);
-    const newSpherePositions = new Float32Array(index * 3);
-    const newSpeeds = new Float32Array(index);
     
-    newPositions.set(positions.subarray(0, index * 3));
-    newDestinations.set(destinations.subarray(0, index * 3));
-    newSpherePositions.set(spherePositions.subarray(0, index * 3));
-    newSpeeds.set(speeds.subarray(0, index));
-    
-    positions = newPositions;
-    destinations = newDestinations;
-    spherePositions = newSpherePositions;
-    speeds = newSpeeds;
+    i++;
   }
 
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('destination', new THREE.BufferAttribute(destinations, 3));
   geometry.setAttribute('spherePosition', new THREE.BufferAttribute(spherePositions, 3));
   geometry.setAttribute('speed', new THREE.BufferAttribute(speeds, 1));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
   const material = new THREE.PointsMaterial({
     size: config.particles.size,
-    color: 0xFFFFFF,
+    vertexColors: true,
     sizeAttenuation: true,
-    map: new THREE.TextureLoader().load('./Globe.jpg'),
     transparent: true,
+    opacity: 0.8,
     blending: THREE.AdditiveBlending
   });
 
