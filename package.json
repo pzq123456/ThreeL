@@ -11,11 +11,9 @@
   "devDependencies": {
     "@types/three": "latest",
     "typescript": "latest",
-    "vite": "latest"
+    "vite": "^7.0.5"
   },
   "dependencies": {
-    "axios": "latest",
-    "gsap": "^3.13.0",
     "lil-gui": "latest",
     "three": "latest"
   }

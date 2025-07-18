@@ -9,6 +9,9 @@ import './style.css';
 
 const CANVAS_ID = 'scene';
 
+import globeTexture from '/Globe.jpg?url';
+import normalTexture from '/normal.jpg?url';
+
 // Scene configuration
 const config = {
   sphere: {
@@ -103,11 +106,11 @@ function createSphere() {
     config.sphere.heightSegments
   );
 
-  const texture = new THREE.TextureLoader().load('./Neight.png', (tex) => {
+  const texture = new THREE.TextureLoader().load(globeTexture, (tex) => {
     imagedata = getImageData(tex.image);
     createParticles();
   });
-  const normal = new THREE.TextureLoader().load('./normal.jpg');
+  const normal = new THREE.TextureLoader().load(normalTexture);
 
   createMorphTarget(sphereGeometry);
 
